@@ -4,6 +4,9 @@ import torch
 import cv2
 import numpy as np
 
+import rospy
+from geometry_msgs.msg import Twist
+
 YOLOV5_PATH = Path("./")
 
 #load model
@@ -43,6 +46,9 @@ tracker = Tracker(distance_function="euclidean", distance_threshold=100)
 
 cap = cv2.VideoCapture(1)
 
+rospy.init_node('jackal_velocity_controller')
+pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
 while cap.isOpened():
 	# Read a video frame
 	ret, frame = cap.read()
@@ -66,6 +72,12 @@ while cap.isOpened():
 		x, y = track.estimate[0]
 		# Use cv2 to draw on your image here, for example:
 		cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 0), -1)
+
+		twist = Twist()
+
+		twist.angular.z = (x - frame.shape[1]/2) * 0.01
+
+		pub.publish(twist)
 
 	cv2.imshow('frame', frame)
 	if cv2.waitKey(1) & 0xFF == ord('q'):
